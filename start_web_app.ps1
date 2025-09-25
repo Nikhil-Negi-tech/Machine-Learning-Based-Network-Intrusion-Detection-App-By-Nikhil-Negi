@@ -7,4 +7,4 @@ Write-Host "💡 To stop the app, press Ctrl+C in this window" -ForegroundColor 
 Write-Host ""
 Write-Host "Press any key to continue..." -ForegroundColor White
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-streamlit run web_app.py
+streamlit run web_app_simple.py

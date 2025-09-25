@@ -7,4 +7,4 @@ echo.
 echo 💡 To stop the app, press Ctrl+C in this window
 echo.
 pause
-streamlit run web_app.py
+streamlit run web_app_simple.py
