@@ -319,11 +319,11 @@ def main():
         st.subheader("📋 Sample Data")
         st.dataframe(df.head(10), use_container_width=True)
         
-        # Training section
-        st.header("🤖 AI Model Training")
+        # Testing section
+        st.header("🤖 AI Model Testing")
         
-        if st.button("🚀 Start Training", type="primary", use_container_width=True):
-            st.info(f"🔄 Training AI models on {len(df):,} network connections...")
+        if st.button("🚀 Start Testing", type="primary", use_container_width=True):
+            st.info(f"🔄 Testing AI models on {len(df):,} network connections...")
             
             # Simulate model training
             results = simulate_ml_training()
