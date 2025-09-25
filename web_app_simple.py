@@ -141,10 +141,80 @@ def load_nsl_kdd_data():
         st.warning(f"Could not load NSL-KDD data: {e}")
         return None
 
+def get_attack_patterns_by_dataset(dataset_type):
+    """Define attack patterns for different dataset types"""
+    attack_patterns = {
+        "high_security": {
+            "DoS": 2, "Probe": 1, "U2R": 0, "R2L": 1,
+            "description": "Minimal attacks due to strong security"
+        },
+        "under_attack": {
+            "DoS": 45, "Probe": 25, "U2R": 8, "R2L": 12,
+            "description": "Heavy attack activity across all categories"
+        },
+        "corporate": {
+            "DoS": 15, "Probe": 8, "U2R": 2, "R2L": 5,
+            "description": "Typical corporate threat landscape"
+        },
+        "public_wifi": {
+            "DoS": 20, "Probe": 15, "U2R": 3, "R2L": 8,
+            "description": "Mixed attack types from diverse threat actors"
+        },
+        "balanced": {
+            "DoS": 18, "Probe": 10, "U2R": 3, "R2L": 6,
+            "description": "Representative sample of common attacks"
+        },
+        "nsl_kdd": {
+            "DoS": 22, "Probe": 12, "U2R": 4, "R2L": 8,
+            "description": "Real-world attack distribution from NSL-KDD dataset"
+        },
+        "custom": {
+            "DoS": 12, "Probe": 8, "U2R": 2, "R2L": 4,
+            "description": "Estimated attack distribution for custom data"
+        }
+    }
+    return attack_patterns.get(dataset_type, attack_patterns["balanced"])
+
+def get_attack_encyclopedia():
+    """Comprehensive attack reference table"""
+    return {
+        "DoS (Denial of Service)": {
+            "description": "Overwhelms system resources to make services unavailable",
+            "detection_indicators": "High connection count, abnormal traffic volume, repeated requests",
+            "examples": "SYN Flood, UDP Flood, HTTP Flood, Ping of Death",
+            "severity": "High",
+            "target": "Network availability and system resources"
+        },
+        "Probe (Scanning)": {
+            "description": "Reconnaissance attacks to gather system information",
+            "detection_indicators": "Port scanning, service enumeration, network mapping",
+            "examples": "Nmap scans, Banner grabbing, OS fingerprinting, Vulnerability scanning",
+            "severity": "Medium",
+            "target": "System information and network topology"
+        },
+        "U2R (User to Root)": {
+            "description": "Privilege escalation from normal user to administrator",
+            "detection_indicators": "Unusual system calls, privilege changes, buffer overflows",
+            "examples": "Buffer overflow exploits, Rootkits, Privilege escalation scripts",
+            "severity": "Critical",
+            "target": "System privileges and administrative access"
+        },
+        "R2L (Remote to Local)": {
+            "description": "Unauthorized remote access to local system resources",
+            "detection_indicators": "Login anomalies, password attacks, protocol exploitation",
+            "examples": "FTP brute force, SSH attacks, Password cracking, Social engineering",
+            "severity": "High",
+            "target": "Remote system access and authentication bypass"
+        }
+    }
+
 def simulate_ml_training(dataset_type="balanced"):
     """Simulate ML model training with realistic results based on dataset type"""
     models = ['K-Nearest Neighbors', 'Support Vector Machine', 'Linear Discriminant Analysis']
     results = {}
+    
+    # Get attack patterns for this dataset
+    attack_info = get_attack_patterns_by_dataset(dataset_type)
     
     # Adjust accuracy based on dataset difficulty
     if dataset_type == "high_security":
@@ -190,6 +260,9 @@ def simulate_ml_training(dataset_type="balanced"):
         progress_bar.progress((i + 1) / len(models))
     
     status_text.text('Testing complete! 🎉')
+    
+    # Add attack pattern information to results
+    results['attack_patterns'] = attack_info
     return results
 
 def create_data_overview(df):
@@ -432,8 +505,45 @@ def main():
             st.header("📈 Results Dashboard")
             create_results_dashboard(results)
             
+            # Attack patterns encountered
+            if 'attack_patterns' in results:
+                st.header("🎯 Attack Patterns Detected")
+                attack_info = results['attack_patterns']
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    # Attack distribution chart
+                    attack_types = ['DoS', 'Probe', 'U2R', 'R2L']
+                    attack_counts = [attack_info[attack] for attack in attack_types]
+                    
+                    fig_attacks = px.bar(
+                        x=attack_types,
+                        y=attack_counts,
+                        title="Attack Types Encountered During Testing",
+                        labels={'x': 'Attack Type', 'y': 'Number of Attacks'},
+                        color=attack_counts,
+                        color_continuous_scale='Reds'
+                    )
+                    fig_attacks.update_layout(height=400, showlegend=False)
+                    st.plotly_chart(fig_attacks, use_container_width=True)
+                
+                with col2:
+                    st.subheader("📊 Attack Summary")
+                    total_attacks = sum(attack_counts)
+                    
+                    for attack_type, count in zip(attack_types, attack_counts):
+                        percentage = (count / total_attacks * 100) if total_attacks > 0 else 0
+                        st.metric(
+                            f"{attack_type} Attacks", 
+                            f"{count}",
+                            f"{percentage:.1f}% of total"
+                        )
+                    
+                    st.info(f"**Context**: {attack_info['description']}")
+            
             # Success message
-            best_accuracy = max(result['accuracy'] for result in results.values())
+            best_accuracy = max(result['accuracy'] for result in results.values() if isinstance(result, dict) and 'accuracy' in result)
             st.balloons()
             st.success(f"🎉 Testing completed! Best accuracy: {best_accuracy*100:.1f}%")
             
@@ -450,14 +560,72 @@ def main():
             with col3:
                 st.info("🎯 **Low False Positives**: Minimal disruption to normal operations")
             
+            # Attack Encyclopedia
+            st.header("📚 Cybersecurity Attack Encyclopedia")
+            st.markdown("*Comprehensive reference guide for network intrusion types*")
+            
+            attack_encyclopedia = get_attack_encyclopedia()
+            
+            # Create tabs for each attack type
+            tab1, tab2, tab3, tab4 = st.tabs(["🔥 DoS Attacks", "🔍 Probe Attacks", "👑 U2R Attacks", "🌐 R2L Attacks"])
+            
+            attack_tabs = [tab1, tab2, tab3, tab4]
+            attack_keys = list(attack_encyclopedia.keys())
+            
+            for tab, attack_name in zip(attack_tabs, attack_keys):
+                with tab:
+                    attack_data = attack_encyclopedia[attack_name]
+                    
+                    col1, col2 = st.columns([2, 1])
+                    
+                    with col1:
+                        st.subheader(attack_name)
+                        st.write(f"**Description**: {attack_data['description']}")
+                        st.write(f"**Detection Indicators**: {attack_data['detection_indicators']}")
+                        st.write(f"**Common Examples**: {attack_data['examples']}")
+                        st.write(f"**Primary Target**: {attack_data['target']}")
+                    
+                    with col2:
+                        severity_color = {
+                            "Critical": "🔴",
+                            "High": "🟠", 
+                            "Medium": "🟡",
+                            "Low": "🟢"
+                        }
+                        
+                        st.markdown(f"""
+                        <div class="warning-card">
+                            <h3>Threat Level</h3>
+                            <h2>{severity_color.get(attack_data['severity'], '⚪')} {attack_data['severity']}</h2>
+                        </div>
+                        """, unsafe_allow_html=True)
+            
+            # Summary table
+            st.subheader("📋 Quick Reference Table")
+            
+            encyclopedia_df = pd.DataFrame([
+                {
+                    'Attack Type': name.split(' (')[0],
+                    'Severity': data['severity'],
+                    'Primary Target': data['target'],
+                    'Key Indicators': data['detection_indicators'][:50] + "..." if len(data['detection_indicators']) > 50 else data['detection_indicators']
+                }
+                for name, data in attack_encyclopedia.items()
+            ])
+            
+            st.dataframe(encyclopedia_df, use_container_width=True)
+            
             # Download results
             st.subheader("💾 Export Results")
             
+            # Filter out non-model results for CSV
+            model_results = {k: v for k, v in results.items() if isinstance(v, dict) and 'accuracy' in v}
+            
             results_summary = pd.DataFrame({
-                'Model': list(results.keys()),
-                'Accuracy (%)': [results[name]['accuracy'] * 100 for name in results.keys()],
-                'Training Time (s)': [results[name]['training_time'] for name in results.keys()],
-                'Correct Predictions': [results[name]['predictions_correct'] for name in results.keys()]
+                'Model': list(model_results.keys()),
+                'Accuracy (%)': [model_results[name]['accuracy'] * 100 for name in model_results.keys()],
+                'Training Time (s)': [model_results[name]['training_time'] for name in model_results.keys()],
+                'Correct Predictions': [model_results[name]['predictions_correct'] for name in model_results.keys()]
             })
             
             csv = results_summary.to_csv(index=False)
@@ -467,6 +635,35 @@ def main():
                 file_name="intrusion_detection_results.csv",
                 mime="text/csv"
             )
+    
+    # Always-visible Attack Reference
+    st.markdown("---")
+    st.header("📖 Cybersecurity Knowledge Base")
+    
+    with st.expander("🔍 Click to view Attack Types Reference", expanded=False):
+        attack_ref = get_attack_encyclopedia()
+        
+        ref_col1, ref_col2 = st.columns(2)
+        
+        with ref_col1:
+            st.subheader("🔥 DoS (Denial of Service)")
+            st.write("Overwhelms system resources")
+            st.write("*Examples: SYN Flood, DDoS attacks*")
+            
+            st.subheader("👑 U2R (User to Root)")  
+            st.write("Privilege escalation attacks")
+            st.write("*Examples: Buffer overflow, Rootkits*")
+        
+        with ref_col2:
+            st.subheader("🔍 Probe (Reconnaissance)")
+            st.write("Information gathering attacks")
+            st.write("*Examples: Port scans, Network mapping*")
+            
+            st.subheader("🌐 R2L (Remote to Local)")
+            st.write("Unauthorized remote access")
+            st.write("*Examples: Brute force, Password attacks*")
+        
+        st.info("💡 **Pro Tip**: Different network environments show varying attack patterns. High-security networks have fewer attacks but they're harder to detect when they occur!")
     
     # Footer
     st.markdown("---")
