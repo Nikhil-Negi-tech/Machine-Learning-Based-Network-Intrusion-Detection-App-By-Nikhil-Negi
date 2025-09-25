@@ -243,7 +243,7 @@ def create_results_dashboard(results):
 
 def main():
     # Header
-    st.markdown('<h1 class="main-header">🛡️ AI Network Intrusion Detection System</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🛡️ ML Network Intrusion Detection System</h1>', unsafe_allow_html=True)
     
     st.markdown("""
     <div style='text-align: center; margin-bottom: 2rem;'>
