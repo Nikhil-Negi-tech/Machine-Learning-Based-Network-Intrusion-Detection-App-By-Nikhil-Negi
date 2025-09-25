@@ -297,12 +297,19 @@ def create_data_overview(df):
 def create_results_dashboard(results):
     """Create comprehensive results dashboard"""
     
-    # Model comparison
+    # Model comparison - filter out non-model results
     st.subheader("🏆 Model Performance Comparison")
     
-    model_names = list(results.keys())
-    accuracies = [results[name]['accuracy'] * 100 for name in model_names]
-    training_times = [results[name]['training_time'] for name in model_names]
+    # Only include results that have 'accuracy' key (actual model results)
+    model_results = {k: v for k, v in results.items() if isinstance(v, dict) and 'accuracy' in v}
+    
+    if not model_results:
+        st.error("❌ No model results found!")
+        return
+    
+    model_names = list(model_results.keys())
+    accuracies = [model_results[name]['accuracy'] * 100 for name in model_names]
+    training_times = [model_results[name]['training_time'] for name in model_names]
     
     col1, col2 = st.columns(2)
     
@@ -332,9 +339,9 @@ def create_results_dashboard(results):
         fig_time.update_layout(height=400, showlegend=False)
         st.plotly_chart(fig_time, use_container_width=True)
     
-    # Best model analysis
-    best_model_name = max(results.keys(), key=lambda x: results[x]['accuracy'])
-    best_model = results[best_model_name]
+    # Best model analysis - only consider actual model results
+    best_model_name = max(model_results.keys(), key=lambda x: model_results[x]['accuracy'])
+    best_model = model_results[best_model_name]
     
     st.subheader(f"🥇 Best Model: {best_model_name}")
     
@@ -506,7 +513,7 @@ def main():
             create_results_dashboard(results)
             
             # Attack patterns encountered
-            if 'attack_patterns' in results:
+            if 'attack_patterns' in results and isinstance(results['attack_patterns'], dict):
                 st.header("🎯 Attack Patterns Detected")
                 attack_info = results['attack_patterns']
                 
@@ -515,32 +522,39 @@ def main():
                 with col1:
                     # Attack distribution chart
                     attack_types = ['DoS', 'Probe', 'U2R', 'R2L']
-                    attack_counts = [attack_info[attack] for attack in attack_types]
+                    attack_counts = [attack_info.get(attack, 0) for attack in attack_types]
                     
-                    fig_attacks = px.bar(
-                        x=attack_types,
-                        y=attack_counts,
-                        title="Attack Types Encountered During Testing",
-                        labels={'x': 'Attack Type', 'y': 'Number of Attacks'},
-                        color=attack_counts,
-                        color_continuous_scale='Reds'
-                    )
-                    fig_attacks.update_layout(height=400, showlegend=False)
-                    st.plotly_chart(fig_attacks, use_container_width=True)
+                    if sum(attack_counts) > 0:  # Only show chart if there are attacks
+                        fig_attacks = px.bar(
+                            x=attack_types,
+                            y=attack_counts,
+                            title="Attack Types Encountered During Testing",
+                            labels={'x': 'Attack Type', 'y': 'Number of Attacks'},
+                            color=attack_counts,
+                            color_continuous_scale='Reds'
+                        )
+                        fig_attacks.update_layout(height=400, showlegend=False)
+                        st.plotly_chart(fig_attacks, use_container_width=True)
+                    else:
+                        st.info("🛡️ No attacks detected in this network environment!")
                 
                 with col2:
                     st.subheader("📊 Attack Summary")
                     total_attacks = sum(attack_counts)
                     
-                    for attack_type, count in zip(attack_types, attack_counts):
-                        percentage = (count / total_attacks * 100) if total_attacks > 0 else 0
-                        st.metric(
-                            f"{attack_type} Attacks", 
-                            f"{count}",
-                            f"{percentage:.1f}% of total"
-                        )
+                    if total_attacks > 0:
+                        for attack_type, count in zip(attack_types, attack_counts):
+                            if count > 0:  # Only show metrics for attacks that occurred
+                                percentage = (count / total_attacks * 100)
+                                st.metric(
+                                    f"{attack_type} Attacks", 
+                                    f"{count}",
+                                    f"{percentage:.1f}% of total"
+                                )
+                    else:
+                        st.success("🔒 **Secure Environment**: No malicious activity detected!")
                     
-                    st.info(f"**Context**: {attack_info['description']}")
+                    st.info(f"**Context**: {attack_info.get('description', 'Attack pattern analysis')}")
             
             # Success message
             best_accuracy = max(result['accuracy'] for result in results.values() if isinstance(result, dict) and 'accuracy' in result)
