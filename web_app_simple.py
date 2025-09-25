@@ -55,8 +55,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 @st.cache_data
-def load_sample_data():
-    """Create sample test data for demonstration"""
+def load_sample_data(dataset_type="balanced"):
+    """Create sample test data for demonstration with different vulnerability profiles"""
     np.random.seed(42)
     n_samples = 1000
     
@@ -76,16 +76,53 @@ def load_sample_data():
     
     df = pd.DataFrame(data)
     
-    # Create synthetic labels (0 = normal, 1 = attack)
+    # Create different attack patterns based on dataset type
+    if dataset_type == "high_security":
+        # High Security Network - Very few attacks (5-10%)
+        base_prob = 0.02
+        attack_multiplier = 0.15
+        max_attack_rate = 0.10
+        
+    elif dataset_type == "under_attack":
+        # Under Attack Network - Many attacks (60-80%)
+        base_prob = 0.35
+        attack_multiplier = 0.8
+        max_attack_rate = 0.85
+        # Increase suspicious indicators
+        df['serror_rate'] = np.random.beta(3, 2, n_samples)  # Higher error rates
+        df['count'] = np.random.poisson(25, n_samples)  # More connections
+        
+    elif dataset_type == "corporate":
+        # Corporate Network - Medium risk (20-35%)
+        base_prob = 0.08
+        attack_multiplier = 0.4
+        max_attack_rate = 0.35
+        
+    elif dataset_type == "public_wifi":
+        # Public WiFi - Mixed traffic with varied patterns (25-45%)
+        base_prob = 0.12
+        attack_multiplier = 0.6
+        max_attack_rate = 0.50
+        # More varied traffic patterns
+        df['duration'] = np.random.exponential(15, n_samples)  # Shorter connections
+        df['dst_host_count'] = np.random.poisson(80, n_samples)  # More destinations
+        
+    else:  # balanced (default)
+        # Balanced Demo Dataset (30-40%)
+        base_prob = 0.1
+        attack_multiplier = 0.5
+        max_attack_rate = 0.45
+    
+    # Calculate attack probability based on network characteristics
     attack_prob = (
-        0.1 +  # base probability
-        0.3 * (df['serror_rate'] > 0.5) +  # high error rate indicates attack
-        0.2 * (df['count'] > 20) +  # high connection count
-        0.2 * (df['same_srv_rate'] < 0.3)  # low same service rate
+        base_prob +  # base probability
+        attack_multiplier * 0.6 * (df['serror_rate'] > 0.5) +  # high error rate
+        attack_multiplier * 0.4 * (df['count'] > 20) +  # high connection count
+        attack_multiplier * 0.3 * (df['same_srv_rate'] < 0.3)  # low same service rate
     )
     
-    df['intrusion'] = np.random.binomial(1, np.clip(attack_prob, 0, 0.8), n_samples)
-    return df
+    df['intrusion'] = np.random.binomial(1, np.clip(attack_prob, 0, max_attack_rate), n_samples)
+    return df, dataset_type
 
 @st.cache_data
 def load_nsl_kdd_data():
@@ -104,32 +141,55 @@ def load_nsl_kdd_data():
         st.warning(f"Could not load NSL-KDD data: {e}")
         return None
 
-def simulate_ml_training():
-    """Simulate ML model training with realistic results"""
+def simulate_ml_training(dataset_type="balanced"):
+    """Simulate ML model training with realistic results based on dataset type"""
     models = ['K-Nearest Neighbors', 'Support Vector Machine', 'Linear Discriminant Analysis']
     results = {}
+    
+    # Adjust accuracy based on dataset difficulty
+    if dataset_type == "high_security":
+        # Easier to detect few attacks in clean environment
+        base_accuracy_range = (0.96, 0.99)
+        complexity_note = "High accuracy due to clean network environment"
+    elif dataset_type == "under_attack":
+        # Harder due to sophisticated attacks and noise
+        base_accuracy_range = (0.88, 0.94)
+        complexity_note = "Moderate accuracy due to complex attack patterns"
+    elif dataset_type == "corporate":
+        # Standard business environment
+        base_accuracy_range = (0.93, 0.97)
+        complexity_note = "Good accuracy in typical corporate setting"
+    elif dataset_type == "public_wifi":
+        # Mixed traffic makes detection challenging
+        base_accuracy_range = (0.89, 0.95)
+        complexity_note = "Variable accuracy due to diverse traffic patterns"
+    else:  # balanced or others
+        base_accuracy_range = (0.92, 0.98)
+        complexity_note = "Balanced performance across attack types"
     
     progress_bar = st.progress(0)
     status_text = st.empty()
     
     for i, model_name in enumerate(models):
-        status_text.text(f'Training {model_name}...')
-        time.sleep(1)  # Simulate training time
+        status_text.text(f'Testing {model_name}...')
+        time.sleep(1)  # Simulate testing time
         
-        # Simulate realistic accuracy scores
-        base_accuracy = 0.92 + np.random.random() * 0.07  # 92-99%
+        # Simulate realistic accuracy scores based on dataset
+        min_acc, max_acc = base_accuracy_range
+        base_accuracy = min_acc + np.random.random() * (max_acc - min_acc)
         training_time = 0.5 + np.random.random() * 2.0   # 0.5-2.5 seconds
         
         results[model_name] = {
             'accuracy': base_accuracy,
             'training_time': training_time,
             'predictions_correct': int(base_accuracy * 1000),
-            'total_predictions': 1000
+            'total_predictions': 1000,
+            'complexity_note': complexity_note
         }
         
         progress_bar.progress((i + 1) / len(models))
     
-    status_text.text('Training complete! 🎉')
+    status_text.text('Testing complete! 🎉')
     return results
 
 def create_data_overview(df):
@@ -259,39 +319,79 @@ def main():
     # Data source selection
     data_source = st.sidebar.selectbox(
         "Select Data Source",
-        ["Demo Dataset (Recommended)", "NSL-KDD Dataset", "Upload Custom Data"]
+        [
+            "Demo Dataset (Balanced)", 
+            "High Security Network (Low Attacks)", 
+            "Under Attack Network (High Threats)", 
+            "Corporate Network (Medium Risk)",
+            "Public WiFi Network (Mixed Traffic)",
+            "NSL-KDD Dataset", 
+            "Upload Custom Data"
+        ]
     )
     
     # Load data based on selection
-    if data_source == "Demo Dataset (Recommended)":
-        df = load_sample_data()
-        st.success("✅ Demo dataset loaded successfully!")
+    if data_source == "Demo Dataset (Balanced)":
+        df, dataset_info = load_sample_data("balanced")
+        st.success("✅ Balanced demo dataset loaded successfully!")
+        
+    elif data_source == "High Security Network (Low Attacks)":
+        df, dataset_info = load_sample_data("high_security")
+        st.success("🔒 High security network dataset loaded - Minimal attack traffic!")
+        
+    elif data_source == "Under Attack Network (High Threats)":
+        df, dataset_info = load_sample_data("under_attack")
+        st.warning("⚠️ Under attack network dataset loaded - High threat environment!")
+        
+    elif data_source == "Corporate Network (Medium Risk)":
+        df, dataset_info = load_sample_data("corporate")
+        st.info("🏢 Corporate network dataset loaded - Typical business environment!")
+        
+    elif data_source == "Public WiFi Network (Mixed Traffic)":
+        df, dataset_info = load_sample_data("public_wifi")
+        st.info("📶 Public WiFi dataset loaded - Mixed traffic patterns!")
         
     elif data_source == "NSL-KDD Dataset":
         df = load_nsl_kdd_data()
+        dataset_info = "nsl_kdd"
         if df is not None:
             st.success("✅ NSL-KDD dataset loaded successfully!")
         else:
             st.info("📁 Using demo data instead")
-            df = load_sample_data()
+            df, dataset_info = load_sample_data("balanced")
             
     else:  # Upload custom data
         uploaded_file = st.sidebar.file_uploader("Upload CSV file", type=['csv'])
         if uploaded_file is not None:
             try:
                 df = pd.read_csv(uploaded_file)
+                dataset_info = "custom"
                 if 'intrusion' not in df.columns:
                     # Create synthetic labels for uploaded data
                     df['intrusion'] = np.random.binomial(1, 0.3, len(df))
                 st.success("✅ Custom dataset loaded successfully!")
             except Exception as e:
                 st.error(f"❌ Error loading file: {e}")
-                df = load_sample_data()
+                df, dataset_info = load_sample_data("balanced")
         else:
             st.info("📁 Please upload a CSV file or use demo data")
-            df = load_sample_data()
+            df, dataset_info = load_sample_data("balanced")
     
     if df is not None:
+        # Dataset context information
+        dataset_descriptions = {
+            "high_security": "🔒 **High Security Environment**: Well-protected network with advanced firewalls, IDS, and security monitoring. Minimal attack success rate.",
+            "under_attack": "⚠️ **Under Active Attack**: Network experiencing coordinated attacks, security breaches, and high malicious activity.",
+            "corporate": "🏢 **Corporate Network**: Typical business environment with standard security measures and mixed legitimate/suspicious traffic.",
+            "public_wifi": "📶 **Public WiFi**: Open network with diverse users, varied traffic patterns, and moderate security risks.",
+            "balanced": "⚖️ **Balanced Demo**: Representative sample with realistic mix of normal and attack traffic for demonstration.",
+            "nsl_kdd": "🎓 **NSL-KDD Dataset**: Industry-standard cybersecurity benchmark dataset from real network traffic.",
+            "custom": "📁 **Custom Data**: User-uploaded dataset with synthetic attack labels generated for analysis."
+        }
+        
+        if dataset_info in dataset_descriptions:
+            st.info(dataset_descriptions[dataset_info])
+        
         # Data overview
         st.header("📊 Dataset Overview")
         
@@ -325,8 +425,8 @@ def main():
         if st.button("🚀 Start Testing", type="primary", use_container_width=True):
             st.info(f"🔄 Testing AI models on {len(df):,} network connections...")
             
-            # Simulate model training
-            results = simulate_ml_training()
+            # Simulate model testing with dataset-specific results
+            results = simulate_ml_training(dataset_info)
             
             # Display results
             st.header("📈 Results Dashboard")
@@ -335,7 +435,7 @@ def main():
             # Success message
             best_accuracy = max(result['accuracy'] for result in results.values())
             st.balloons()
-            st.success(f"🎉 Training completed! Best accuracy: {best_accuracy*100:.1f}%")
+            st.success(f"🎉 Testing completed! Best accuracy: {best_accuracy*100:.1f}%")
             
             # Additional insights
             st.subheader("🔍 Key Insights")
