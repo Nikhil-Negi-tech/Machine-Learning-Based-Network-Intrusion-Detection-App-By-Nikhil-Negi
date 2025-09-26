@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,10 +18,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Google Search Console verification
+# Google Search Console verification - inject into head
 st.markdown("""
+<head>
 <meta name="google-site-verification" content="_ZtYvygHTSCAU1yVoQX2kHtRyOODgSH0JYBPE4NZhvM" />
+</head>
 """, unsafe_allow_html=True)
+
+# Alternative method - add to HTML components
+components.html("""
+<meta name="google-site-verification" content="_ZtYvygHTSCAU1yVoQX2kHtRyOODgSH0JYBPE4NZhvM" />
+""", height=0)
 
 # Custom CSS for better styling
 st.markdown("""
