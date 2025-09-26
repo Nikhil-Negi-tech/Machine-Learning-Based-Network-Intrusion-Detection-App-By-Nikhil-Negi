@@ -1,5 +1,5 @@
 # Network-Intrusion-Detection-Using-Deep-Learning
-Loosely based on research paper **A Novel Statistical Analysis and Autoencoder Driven Intelligent Intrusion Detection Approach** 
+Based on research paper **A Novel Statistical Analysis and Autoencoder Driven Intelligent Intrusion Detection Approach** 
 https://doi.org/10.1016/j.neucom.2019.11.016
 
 ## Blog of this Project
