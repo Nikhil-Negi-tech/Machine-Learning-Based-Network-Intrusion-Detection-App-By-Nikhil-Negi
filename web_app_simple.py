@@ -419,10 +419,10 @@ def main():
         "Select Data Source",
         [
             "Demo Dataset (Balanced)", 
-            "High Security Network (Low Attacks)", 
-            "Under Attack Network (High Threats)", 
-            "Corporate Network (Medium Risk)",
-            "Public WiFi Network (Mixed Traffic)",
+            "High Security Dataset (Low Attacks)", 
+            "Under Attack Dataset (High Threats)", 
+            "Corporate Dataset (Medium Risk)",
+            "Public WiFi Dataset (Mixed Traffic)",
             "NSL-KDD Dataset", 
             "Upload Custom Data"
         ]
@@ -431,23 +431,43 @@ def main():
     # Load data based on selection
     if data_source == "Demo Dataset (Balanced)":
         df, dataset_info = load_sample_data("balanced")
-        st.success("✅ Balanced demo dataset loaded successfully!")
+        if df is not None:
+            st.success("✅ Balanced demo dataset loaded successfully!")
+        else:
+            st.info("📁 Using demo data instead")
+            df, dataset_info = load_sample_data("balanced")
         
-    elif data_source == "High Security Network (Low Attacks)":
+    elif data_source == "High Security Dataset (Low Attacks)":
         df, dataset_info = load_sample_data("high_security")
-        st.success("🔒 High security network dataset loaded - Minimal attack traffic!")
+        if df is not None:
+            st.success("🔒 High security dataset loaded - Minimal attack traffic!")
+        else:
+            st.info("📁 Using demo data instead")
+            df, dataset_info = load_sample_data("balanced")
         
-    elif data_source == "Under Attack Network (High Threats)":
+    elif data_source == "Under Attack Dataset (High Threats)":
         df, dataset_info = load_sample_data("under_attack")
-        st.warning("⚠️ Under attack network dataset loaded - High threat environment!")
+        if df is not None:
+            st.warning("⚠️ Under attack dataset loaded - High threat environment!")
+        else:
+            st.info("📁 Using demo data instead")
+            df, dataset_info = load_sample_data("balanced")
         
-    elif data_source == "Corporate Network (Medium Risk)":
+    elif data_source == "Corporate Dataset (Medium Risk)":
         df, dataset_info = load_sample_data("corporate")
-        st.info("🏢 Corporate network dataset loaded - Typical business environment!")
+        if df is not None:
+            st.info("🏢 Corporate dataset loaded - Typical business environment!")
+        else:
+            st.info("📁 Using demo data instead")
+            df, dataset_info = load_sample_data("balanced")
         
-    elif data_source == "Public WiFi Network (Mixed Traffic)":
+    elif data_source == "Public WiFi Dataset (Mixed Traffic)":
         df, dataset_info = load_sample_data("public_wifi")
-        st.info("📶 Public WiFi dataset loaded - Mixed traffic patterns!")
+        if df is not None:
+            st.info("📶 Public WiFi dataset loaded - Mixed traffic patterns!")
+        else:
+            st.info("📁 Using demo data instead")
+            df, dataset_info = load_sample_data("balanced")
         
     elif data_source == "NSL-KDD Dataset":
         df = load_nsl_kdd_data()
