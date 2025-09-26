@@ -24,7 +24,8 @@ st.markdown("""
         font-size: 3rem;
         color: #1f77b4;
         text-align: center;
-        margin-bottom: 2rem;
+        margin-top: 0em;
+        margin-bottom: 0em;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
     }
     .metric-card {
@@ -51,8 +52,20 @@ st.markdown("""
         text-align: center;
         margin: 0.5rem 0;
     }
+    /* Reduce top padding of main container */
+    .main .block-container {
+        padding-top: 0rem;
+        padding-bottom: 0rem;
+    }
+    /* Remove extra space at the top */
+    .main > div {
+        padding-top: 0rem;
+    }
 </style>
 """, unsafe_allow_html=True)
+
+# Display title at the very top
+st.markdown('<h1 class="main-header">🛡️ ML Based Network Intrusion Detection System</h1>', unsafe_allow_html=True)
 
 @st.cache_data
 def load_sample_data(dataset_type="balanced"):
@@ -300,6 +313,7 @@ def create_results_dashboard(results):
     # Model comparison - filter out non-model results
     st.subheader("🏆 Model Performance Comparison")
     
+    
     # Only include results that have 'accuracy' key (actual model results)
     model_results = {k: v for k, v in results.items() if isinstance(v, dict) and 'accuracy' in v}
     
@@ -338,12 +352,15 @@ def create_results_dashboard(results):
         )
         fig_time.update_layout(height=400, showlegend=False)
         st.plotly_chart(fig_time, use_container_width=True)
-    
+
+    st.markdown("---")
+
     # Best model analysis - only consider actual model results
     best_model_name = max(model_results.keys(), key=lambda x: model_results[x]['accuracy'])
     best_model = model_results[best_model_name]
     
     st.subheader(f"🥇 Best Model: {best_model_name}")
+    
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -380,11 +397,11 @@ def create_results_dashboard(results):
             <h2>{attacks_detected}/{total_attacks}</h2>
         </div>
         """, unsafe_allow_html=True)
+    
+    st.markdown("---")
 
 def main():
-    # Header
-    st.markdown('<h1 class="main-header">🛡️ ML Based Network Intrusion Detection System</h1>', unsafe_allow_html=True)
-    
+    # Subtitle section
     st.markdown("""
     <div style='text-align: center; margin-bottom: 2rem;'>
         <p style='font-size: 1.2rem; color: #666;'>
@@ -392,6 +409,7 @@ def main():
         </p>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown("---")
     
     # Sidebar
     st.sidebar.title("🔧 Configuration")
@@ -472,6 +490,8 @@ def main():
         if dataset_info in dataset_descriptions:
             st.info(dataset_descriptions[dataset_info])
         
+        st.markdown("---")
+
         # Data overview
         st.header("📊 Dataset Overview")
         
@@ -491,10 +511,14 @@ def main():
         with col4:
             attack_percentage = (attack_count / len(df)) * 100
             st.metric("Attack Rate", f"{attack_percentage:.1f}%")
+
+        st.markdown("---")
         
         # Data visualizations
         create_data_overview(df)
-        
+
+        st.markdown("---")
+
         # Sample data display
         st.subheader("📋 Sample Data")
         st.dataframe(df.head(10), use_container_width=True)
@@ -508,8 +532,12 @@ def main():
             # Simulate model testing with dataset-specific results
             results = simulate_ml_training(dataset_info)
             
+            st.markdown("---")
+
             # Display results
             st.header("📈 Results Dashboard")
+
+            st.markdown("---")
             create_results_dashboard(results)
             
             # Attack patterns encountered
@@ -560,6 +588,7 @@ def main():
             best_accuracy = max(result['accuracy'] for result in results.values() if isinstance(result, dict) and 'accuracy' in result)
             st.balloons()
             st.success(f"🎉 Testing completed! Best accuracy: {best_accuracy*100:.1f}%")
+            st.markdown("---")
             
             # Additional insights
             st.subheader("🔍 Key Insights")
@@ -650,40 +679,11 @@ def main():
                 mime="text/csv"
             )
     
-    # Always-visible Attack Reference
-    st.markdown("---")
-    st.header("📖 Cybersecurity Knowledge Base")
-    
-    with st.expander("🔍 Click to view Attack Types Reference", expanded=False):
-        attack_ref = get_attack_encyclopedia()
-        
-        ref_col1, ref_col2 = st.columns(2)
-        
-        with ref_col1:
-            st.subheader("🔥 DoS (Denial of Service)")
-            st.write("Overwhelms system resources")
-            st.write("*Examples: SYN Flood, DDoS attacks*")
-            
-            st.subheader("👑 U2R (User to Root)")  
-            st.write("Privilege escalation attacks")
-            st.write("*Examples: Buffer overflow, Rootkits*")
-        
-        with ref_col2:
-            st.subheader("🔍 Probe (Reconnaissance)")
-            st.write("Information gathering attacks")
-            st.write("*Examples: Port scans, Network mapping*")
-            
-            st.subheader("🌐 R2L (Remote to Local)")
-            st.write("Unauthorized remote access")
-            st.write("*Examples: Brute force, Password attacks*")
-        
-        st.info("💡 **Pro Tip**: Different network environments show varying attack patterns. High-security networks have fewer attacks but they're harder to detect when they occur!")
-    
     # Footer
     st.markdown("---")
     st.markdown("""
     <div style='text-align: center; color: #666; margin-top: 2rem;'>
-        <p>🛡️ Network Intrusion Detection System | Built with Streamlit & AI</p>
+        <p>🛡️ Network Intrusion Detection System | Built with Streamlit</p>
         <p>Protecting networks with advanced machine learning algorithms</p>
     </div>
     """, unsafe_allow_html=True)
