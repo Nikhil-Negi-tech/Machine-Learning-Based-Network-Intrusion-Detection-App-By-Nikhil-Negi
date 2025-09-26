@@ -17,6 +17,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Google Search Console verification
+st.markdown("""
+<meta name="google-site-verification" content="_ZtYvygHTSCAU1yVoQX2kHtRyOODgSH0JYBPE4NZhvM" />
+""", unsafe_allow_html=True)
+
 # Custom CSS for better styling
 st.markdown("""
 <style>
